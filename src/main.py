@@ -7,7 +7,7 @@ from flask_migrate import Migrate
 from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
-from models import db
+from models import db, Person
 #from models import Person
 
 app = Flask(__name__)
@@ -28,14 +28,55 @@ def handle_invalid_usage(error):
 def sitemap():
     return generate_sitemap(app)
 
-@app.route('/hello', methods=['POST', 'GET'])
-def handle_hello():
+@app.route('/person', methods=['GET', 'POST']) 
+def handle_query():
+     if request.method =='GET':
+         people_query = Person.query.all()
+         all_people = list(map(lambda x: x.serialize(), people_query))
+         return jsonify(all_people), 200
+     if request.method =='POST':
 
-    response_body = {
-        "hello": "world"
-    }
+        #user1 = Person(username="jim godoy", email="my_xuper@email.com")
+        
+        body = request.get_json()
+        user1 = Person(full_name=body.get('full_name'), username=body.get('username'), email=body.get('email'), phone=body.get('phone'), address=body.get('address'))
+        db.session.add(user1)
+        db.session.commit()
+        return jsonify(user1.id), 200
 
-    return jsonify(response_body), 200
+
+@app.route('/person <int:id>', methods=['GET', 'PUT', 'DELETE'])
+def handle_person(person_id):
+     if request.method == 'GET':
+          user1 = Person.query.get(person_id)
+          return jsonify(user1), 200
+
+     if request.method == 'PUT':
+
+        if user1 is None:
+            raise APIException('User not found', status_code=404)
+
+     if "full_name" in body:
+         user1.email = body["full_name"]
+
+     if "username" in body:
+         user1.username = body["username"]
+     if "email" in body:
+         user1.email = body["email"]
+     if "phone" in body:
+         user1.email = body["phone"]
+     if "address" in body:
+         user1.email = body["address"]
+         db.session.commit()
+
+     if request.method == 'DELETE':
+         user1 = Person.query.get(person_id)
+     if user1 is None:
+         raise APIException('User not found', status_code=404)
+     db.session.delete(user1)
+     db.session.commit()
+
+     return jsonify(response_body), 200
 
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
